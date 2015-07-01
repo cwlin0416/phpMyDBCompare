@@ -1,6 +1,26 @@
 # phpMyDBCompare
 
 phpMyDBCompare can compare MySQL database schema and generate diff sql to synchronize database schema.
+It's support:
+* Table 
+* Table columns 
+* Table indexes
+* Table constraints
+* Character set and collation
+
+Synchronize table constraints may occur error caused by data not consistent (foreign key dosen't exists).
+You can use following SQL to fix:
+
+```sql
+DELETE FROM `TableA` WHERE TableA.fk NOT IN(SELECT pk FROM `TableB`);
+```
+
+If Foreign Key allowed to use NULL, use following SQL to fix:
+
+```sql
+DELETE FROM `TableA` WHERE TableA.fk NOT IN(SELECT pk FROM `TableB`) AND TableA.fk IS NOT NULL;
+```
+
 
 Example Code:
 
