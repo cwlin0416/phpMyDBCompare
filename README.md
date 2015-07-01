@@ -22,7 +22,7 @@ UPDATE `TableA` LEFT JOIN $tableB ON TableA.fk = TableB.pk SET TableA.fk = NULL
 ```
 
 
-# Example Code
+## Example Code
 
 ```php
 <?php
@@ -38,11 +38,11 @@ $dc->compareTables();
 ?>
 ```
 
-# Command Line
+## Command Line
 
 	./compare_cli.php <dbhost> <user> <password> <source dbname> <dest dbname>
 
-# Result
+## Result
 
 ```sql
 --
