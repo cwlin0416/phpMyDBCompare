@@ -106,7 +106,7 @@ class DatabaseCompare {
 		$this->diffSql .= "--\n";
 		$this->diffSql .= "-- https://github.com/cwlin0416/phpMyDBCompare\n";
 		$this->diffSql .= "-- Copyright (C) 2015 Chien Wei Lin\n";
-		$this->diffSql .= "-- Generated time: ". date("Y-m-d H:m:s")."\n";
+		$this->diffSql .= "-- Generated time: ". date("Y-m-d H:i:s")."\n";
 		$this->diffSql .= "-- Source database: " . $this->source->host . ", " . $this->source->dbname . "\n";
 		$this->diffSql .= "-- Destination database: " . $this->dest->host . ", " . $this->dest->dbname . "\n";
 		$this->diffSql .= "--\n";
