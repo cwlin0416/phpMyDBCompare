@@ -123,6 +123,7 @@ class DatabaseCompare {
 			$this->diffSql .= "\n--\n-- Drop Table: $tableKey\n--\n";
 			$this->diffSql .= SqlBuilder::dropTable($sourceTables[$tableKey]);
 		}
+		$this->printSql();
 	}
 
 	/**
@@ -162,7 +163,6 @@ class DatabaseCompare {
 		foreach ($deleteColumnKeys as $columnKey) {
 			$this->diffSql .= SqlBuilder::dropTableColumn($sourceTable, $sourceTableColumns[$columnKey]);
 		}
-		$this->printSql();
 	}
 
 	/**
