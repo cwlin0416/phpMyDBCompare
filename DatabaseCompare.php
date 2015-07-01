@@ -101,10 +101,19 @@ class DatabaseCompare {
 
 		$this->diffSql = "";
 
-		$this->diffSql .= "\n--\n-- Compare database: " . $this->source->dbname . ", " . $this->dest->dbname . "\n--\n";
+		$this->diffSql .= "\n--\n";
+		$this->diffSql .= "-- phpMyDBCompare\n";
+		$this->diffSql .= "--\n";
+		$this->diffSql .= "-- https://github.com/cwlin0416/phpMyDBCompare\n";
+		$this->diffSql .= "-- Copyright (C) 2015 Chien Wei Lin\n";
+		$this->diffSql .= "-- Generated time: ". date("Y-m-d H:m:s")."\n";
+		$this->diffSql .= "-- Source database: " . $this->source->host . ", " . $this->source->dbname . "\n";
+		$this->diffSql .= "-- Destination database: " . $this->dest->host . ", " . $this->dest->dbname . "\n";
+		$this->diffSql .= "--\n";
 
+		$this->diffSql .= "\n--\n-- Alter Tables\n--\n";
 		foreach ($syncTableKeys as $tableKey) {
-			$this->diffSql .= "\n--\n-- Alter Table: $tableKey\n--\n";
+			$this->diffSql .= "\n-- Alter Table: $tableKey\n";
 			$compareResult = $this->compareTable($sourceTables[$tableKey], $destTables[$tableKey]);
 			$this->diffSql .= SqlBuilder::alterTable($sourceTables[$tableKey], $compareResult);
 
@@ -113,14 +122,16 @@ class DatabaseCompare {
 			$this->compareTableConstraints($tableKey, $sourceTables[$tableKey]);
 		}
 
+		$this->diffSql .= "\n--\n-- Create Tables\n--\n";
 		foreach ($addTableKeys as $tableKey) {
-			$this->diffSql .= "\n--\n-- Create Table: $tableKey\n--\n";
+			
 			$this->diffSql .= SqlBuilder::createTable(
 							$destTables[$tableKey], $this->dest->getTableColumns($tableKey), $this->dest->getTableIndexes($tableKey), $this->dest->getTableConstraints($tableKey));
 		}
 
+		$this->diffSql .= "\n--\n-- Drop Tables\n--\n";
 		foreach ($deleteKeys as $tableKey) {
-			$this->diffSql .= "\n--\n-- Drop Table: $tableKey\n--\n";
+			
 			$this->diffSql .= SqlBuilder::dropTable($sourceTables[$tableKey]);
 		}
 		$this->printSql();

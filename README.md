@@ -18,7 +18,7 @@ DELETE FROM `TableA` WHERE TableA.fk NOT IN(SELECT pk FROM `TableB`);
 If Foreign Key allowed to use NULL, use following SQL to fix:
 
 ```sql
-DELETE FROM `TableA` WHERE TableA.fk NOT IN(SELECT pk FROM `TableB`) AND TableA.fk IS NOT NULL;
+UPDATE `TableA` LEFT JOIN $tableB ON TableA.fk = TableB.pk SET TableA.fk = NULL
 ```
 
 
@@ -31,6 +31,8 @@ require_once 'DatabaseCompare.php';
 $source = new DatabaseConnection('localhost', 'testa', 'root', '');
 $dest = new DatabaseConnection('localhost', 'testb', 'root', '');
 $dc = new DatabaseCompare($source, $dest);
+SqlBuilder::$constraintSuggestion = true;
+SqlBuilder::$ignoreAutoIncrement = true;
 //$dc->reverse();
 $dc->compareTables();
 ?>

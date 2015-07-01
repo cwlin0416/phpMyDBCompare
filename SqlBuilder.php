@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SqlBuilder 負責依資料庫取得的資訊產生修正 SQL
  * @author		cwlin <cwlin0416@gmail.com>
@@ -9,6 +10,7 @@
 class SqlBuilder {
 
 	public static $ignoreAutoIncrement = true;
+	public static $constraintSuggestion = true;
 
 	/**
 	 * 產生欄位子句
@@ -67,6 +69,35 @@ class SqlBuilder {
 		return $constraintSql;
 	}
 
+	public static function getConstraintSuggestion($constraint) {
+		$tableA = $constraint['TABLE_NAME'];
+		$tableAForeignKey = $constraint['COLUMN_NAME'];
+		$tableB = $constraint['REFERENCED_TABLE_NAME'];
+		$tableBPrimaryKey = $constraint['REFERENCED_COLUMN_NAME'];
+		$suggestSql = "";
+		switch ($constraint['DELETE_RULE']) {
+			case 'CASCADE':
+				// 若限制採用連動刪除，則刪除資料修正關聯
+				$suggestSql .= "-- Constraint suggestion: Please aware rows in $tableA.$tableAForeignKey which reference $tableB.$tableBPrimaryKey not existed will be deleted.\n";
+				$suggestSql .= "DELETE FROM `$tableA` WHERE $tableA.$tableAForeignKey NOT IN(SELECT $tableBPrimaryKey FROM `$tableB`);\n";
+				break;
+			case 'RESTRICT':
+				// 若限制採用限制刪除，則須補齊資料修正關聯 (須人工作業)
+				$suggestSql .= "-- Constraint suggestion: Please manually fix data at $tableB.$tableBPrimaryKey which referenced by $tableA.$tableAForeignKey.\n";
+				break;
+			case 'SET NULL':
+				// 若限制允許為空時，則以空值修正關聯
+				$suggestSql .= "-- Constraint suggestion: Please aware rows in $tableA.$tableAForeignKey which reference $tableB.$tableBPrimaryKey not existed will set to NULL.\n";
+				$suggestSql .= "UPDATE $tableA LEFT JOIN $tableB ON $tableA.$tableAForeignKey = $tableB.$tableBPrimaryKey SET $tableA.$tableAForeignKey = NULL";
+				$suggestSql .= " WHERE $tableA.$tableAForeignKey IS NOT NULL AND $tableB.$tableBPrimaryKey IS NULL;\n";
+				break;
+			case 'NO ACTION':
+				// 若限制允許不做任何處理，則不建議任何動作
+				break;
+		}
+		return $suggestSql;
+	}
+
 	/**
 	 * 建立資料表
 	 * @param type $table
@@ -80,17 +111,17 @@ class SqlBuilder {
 
 		// Columns
 		foreach ($columns as $name => $data) {
-			$sql .= " ". self::getColumnDefinition($data) . ",\n";
+			$sql .= " " . self::getColumnDefinition($data) . ",\n";
 		}
 
 		// Indexes
 		foreach ($indexes as $index) {
-			$sql .= " ". self::getIndexDefinition($index) . ",\n";
+			$sql .= " " . self::getIndexDefinition($index) . ",\n";
 		}
 
 		// Constraints
 		foreach ($constraints as $constraint) {
-			$sql .= " ". self::getConstraintDefinition($constraint) . ",\n";
+			$sql .= " " . self::getConstraintDefinition($constraint) . ",\n";
 		}
 
 		$sql .= ") ENGINE=" . $table['Engine'];
@@ -265,7 +296,11 @@ class SqlBuilder {
 	 * @return string
 	 */
 	public static function addTableConstraint($table, $constraint) {
-		$sql = "ALTER TABLE `" . $table['Name'] . "` ADD ";
+		$sql = "";
+		if (self::$constraintSuggestion) {
+			$sql .= self::getConstraintSuggestion($constraint);
+		}
+		$sql .= "ALTER TABLE `" . $table['Name'] . "` ADD ";
 		$sql .= self::getConstraintDefinition($constraint) . ";\n";
 		return $sql;
 	}
