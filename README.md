@@ -4,6 +4,7 @@ phpMyDBCompare can compare MySQL database schema and generate diff sql to synchr
 
 Example Code:
 
+```php
 	<?php
 	require_once 'DatabaseCompare.php';
 
@@ -13,6 +14,7 @@ Example Code:
 	//$dc->reverse();
 	$dc->compareTables();
 	?>
+```
 
 Command Line:
 
