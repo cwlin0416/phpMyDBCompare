@@ -1,8 +1,10 @@
 <?php
 /**
- * Description of SQLBuilder
- *
- * @author cwlin
+ * SqlBuilder 負責依資料庫取得的資訊產生修正 SQL
+ * @author		cwlin <cwlin0416@gmail.com>
+ * @copyright	2015 Chien Wei Lin
+ * @link		https://github.com/cwlin0416/phpMyDBCompare
+ * @version	1.0.0
  */
 class SqlBuilder {
 

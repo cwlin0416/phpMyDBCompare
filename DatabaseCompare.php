@@ -8,7 +8,7 @@ require_once 'DatabaseConnection.php';
  * DatabaseCompare 可以比對 MySQL 資料庫的綱要，並且產生修正 SQL
  * @author		cwlin <cwlin0416@gmail.com>
  * @copyright	2015 Chien Wei Lin
- * @link		http://github.com/cwlin0416/phpMyDatabaseCompare
+ * @link		https://github.com/cwlin0416/phpMyDBCompare
  * @version	1.0.0
  */
 class DatabaseCompare {

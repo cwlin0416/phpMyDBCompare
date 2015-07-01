@@ -1,9 +1,11 @@
 <?php
 
 /**
- * Description of DatabaseConnection
- *
- * @author cwlin
+ * DatabaseConnection 可連線至資料庫取得資料庫相關資訊
+ * @author		cwlin <cwlin0416@gmail.com>
+ * @copyright	2015 Chien Wei Lin
+ * @link		https://github.com/cwlin0416/phpMyDBCompare
+ * @version	1.0.0
  */
 class DatabaseConnection {
 
