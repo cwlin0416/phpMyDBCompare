@@ -15,4 +15,5 @@ Example Code:
 	?>
 
 Command Line:
+
 	./compare_cli.php <dbhost> <user> <password> <source dbname> <dest dbname>
