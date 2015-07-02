@@ -24,7 +24,7 @@ class SqlBuilder {
 		if (isset($column["Default"])) {
 			$columnSql .= " DEFAULT '" . $column["Default"] . "'";
 		}
-		if (!self::$ignoreAutoIncrement && $column["Extra"] == "auto_increment") {
+		if ($column["Extra"] == "auto_increment") {
 			$columnSql .= " AUTO_INCREMENT";
 		}
 		if (!empty($column["Comment"])) {
@@ -136,6 +136,11 @@ class SqlBuilder {
 		return $sql;
 	}
 
+	public static function renameTable($tableA, $tableB) {
+		$sql = "RENAME TABLE `" . $tableA['Name'] . "` TO `" . $tableB['Name'] . "`;\n";
+		return $sql;
+	}
+
 	/**
 	 * 修改資料表
 	 * @param type $table
@@ -201,6 +206,13 @@ class SqlBuilder {
 		return $sql;
 	}
 
+	public static function changeTableColumn($table, $columnA, $columnB) {
+		$columnSql = "ALTER TABLE `" . $table['Name'] . "` CHANGE `" . $columnA['Field'] . "` ";
+		$columnSql .= self::getColumnDefinition($columnB);
+		$sql = $columnSql . ";\n";
+		return $sql;
+	}
+
 	/**
 	 * 修改資料表欄位
 	 * @param type $table
@@ -213,9 +225,6 @@ class SqlBuilder {
 
 		// Ignore Key changes
 		unset($changes['Key']);
-		if (self::$ignoreAutoIncrement) {
-			unset($changes['Extra']);
-		}
 		if (!empty($changes)) {
 			foreach ($changes as $key => $value) {
 				$column[$key] = $value['to'];

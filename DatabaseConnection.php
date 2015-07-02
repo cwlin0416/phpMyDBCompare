@@ -29,7 +29,7 @@ class DatabaseConnection {
 			$this->conn->query("SET NAMES UTF8");
 		} catch (Exception $exc) {
 			echo "DatabaseConnection($this->host, $this->dbname, $this->user): Connect error: \n";
-			echo $exc->getMessage(). "\n";
+			echo $exc->getMessage() . "\n";
 		}
 	}
 

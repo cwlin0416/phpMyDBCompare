@@ -15,6 +15,18 @@ class DatabaseCompare {
 
 	public $diffSql = "";
 	public $syntaxHighlight = true;
+	public $tableNameMapping = array(
+//		'proj_user_profile_extension' => 'proj_user_additional',
+//		'proj_user_profile_extension_categories' => 'proj_user_additional_field',
+	);
+	
+	public $tableColumnNameMapping = array(
+//		'proj_user_profile_extension' => array(
+//			'extension_id'=>'uadd_id',
+//			'categories_id'=>'uaitem_id',
+//			'categories_content'=>'uadd_value',
+//		)
+	);
 
 	/**
 	 *
@@ -94,7 +106,7 @@ class DatabaseCompare {
 		$sourceTables = $this->source->getTables();
 		$destTables = $this->dest->getTables();
 
-		list($syncTableKeys, $addTableKeys, $deleteKeys) = $this->_compareArrayKeys($sourceTables, $destTables);
+		list($syncTableKeys, $addTableKeys, $deleteTableKeys) = $this->_compareArrayKeys($sourceTables, $destTables);
 		//echo "# Same Tables: " . implode(", \n#  ", $syncTableKeys) . "\n";
 		//echo "# Add Tables: " . implode(", \n#  ", $addTableKeys) . "\n";
 		//echo "# Delete Tables: " . implode(", \n#  ", $deleteKeys) . "\n";
@@ -106,7 +118,7 @@ class DatabaseCompare {
 		$this->diffSql .= "--\n";
 		$this->diffSql .= "-- https://github.com/cwlin0416/phpMyDBCompare\n";
 		$this->diffSql .= "-- Copyright (C) 2015 Chien Wei Lin\n";
-		$this->diffSql .= "-- Generated time: ". date("Y-m-d H:i:s")."\n";
+		$this->diffSql .= "-- Generated time: " . date("Y-m-d H:i:s") . "\n";
 		$this->diffSql .= "-- Source database: " . $this->source->host . ", " . $this->source->dbname . "\n";
 		$this->diffSql .= "-- Destination database: " . $this->dest->host . ", " . $this->dest->dbname . "\n";
 		$this->diffSql .= "--\n";
@@ -117,21 +129,43 @@ class DatabaseCompare {
 			$compareResult = $this->compareTable($sourceTables[$tableKey], $destTables[$tableKey]);
 			$this->diffSql .= SqlBuilder::alterTable($sourceTables[$tableKey], $compareResult);
 
-			$this->compareTableColumns($tableKey, $sourceTables[$tableKey]);
-			$this->compareTableIndexes($tableKey, $sourceTables[$tableKey]);
-			$this->compareTableConstraints($tableKey, $sourceTables[$tableKey]);
+			$this->compareTableColumns($tableKey, $tableKey);
+			$this->compareTableIndexes($tableKey, $tableKey);
+			$this->compareTableConstraints($tableKey, $tableKey);
 		}
 
+		// Find rename table in table mapping
+		foreach ($deleteTableKeys as $sourceTableKey) {
+			if (isset($this->tableNameMapping[$sourceTableKey])) {
+				$destTableKey = $this->tableNameMapping[$sourceTableKey];
+
+				$addTableIndex = array_search($destTableKey, $addTableKeys);
+				unset($addTableKeys[$addTableIndex]);
+
+				$deleteTableIndex = array_search($sourceTableKey, $deleteTableKeys);
+				unset($deleteTableKeys[$deleteTableIndex]);
+				
+				$this->diffSql .= "\n-- Alter Table: $sourceTableKey -> $destTableKey\n";
+				$compareResult = $this->compareTable($sourceTables[$sourceTableKey], $destTables[$destTableKey]);
+				$this->diffSql .= SqlBuilder::alterTable($sourceTables[$sourceTableKey], $compareResult);
+				
+				$this->compareTableColumns($sourceTableKey, $destTableKey);
+				$this->compareTableIndexes($sourceTableKey, $destTableKey);
+				$this->compareTableConstraints($sourceTableKey, $destTableKey);
+				// Rename after sync columns, indexes, constraints
+				$this->diffSql .= SqlBuilder::renameTable($sourceTables[$sourceTableKey], $destTables[$destTableKey]);
+			}
+		}
+		
 		$this->diffSql .= "\n--\n-- Create Tables\n--\n";
 		foreach ($addTableKeys as $tableKey) {
-			
+
 			$this->diffSql .= SqlBuilder::createTable(
 							$destTables[$tableKey], $this->dest->getTableColumns($tableKey), $this->dest->getTableIndexes($tableKey), $this->dest->getTableConstraints($tableKey));
 		}
 
 		$this->diffSql .= "\n--\n-- Drop Tables\n--\n";
-		foreach ($deleteKeys as $tableKey) {
-			
+		foreach ($deleteTableKeys as $tableKey) {
 			$this->diffSql .= SqlBuilder::dropTable($sourceTables[$tableKey]);
 		}
 		$this->printSql();
@@ -150,12 +184,15 @@ class DatabaseCompare {
 
 	/**
 	 * 比對所有欄位
-	 * @param type $tableKey
-	 * @param type $sourceTable
+	 * @param type $sourceKey
+	 * @param type $destKey
 	 */
-	function compareTableColumns($tableKey, $sourceTable) {
-		$sourceTableColumns = $this->source->getTableColumns($tableKey);
-		$destTableColumns = $this->dest->getTableColumns($tableKey);
+	function compareTableColumns($sourceKey, $destKey) {
+		$sourceTables = $this->source->getTables();
+		$sourceTable = $sourceTables[$sourceKey];
+
+		$sourceTableColumns = $this->source->getTableColumns($sourceKey);
+		$destTableColumns = $this->dest->getTableColumns($destKey);
 
 		list($syncColumnKeys, $addColumnKeys, $deleteColumnKeys) = $this->_compareArrayKeys($sourceTableColumns, $destTableColumns);
 		//echo "# Same Columns: " . implode(", ", $syncColumnKeys) . "\n";
@@ -167,6 +204,23 @@ class DatabaseCompare {
 			$this->diffSql .= SqlBuilder::modifyTableColumn($sourceTable, $sourceTableColumns[$columnKey], $compareResult);
 		}
 
+		// Find rename column in table column mapping
+		foreach ($deleteColumnKeys as $sourceColumnKey) {
+			if (isset($this->tableColumnNameMapping[$sourceKey][$sourceColumnKey])) {
+				$destColumnKey =$this->tableColumnNameMapping[$sourceKey][$sourceColumnKey];
+
+				$addColumnIndex = array_search($destColumnKey, $addColumnKeys);
+				unset($addColumnKeys[$addColumnIndex]);
+
+				$deleteColumnIndex = array_search($sourceColumnKey, $deleteColumnKeys);
+				unset($deleteColumnKeys[$deleteColumnIndex]);
+
+				$compareResult = $this->compareTableColumn($sourceTableColumns[$sourceColumnKey], $destTableColumns[$destColumnKey]);
+				// Use changeTableColumn to both rename and modify column
+				$this->diffSql .= SqlBuilder::changeTableColumn($sourceTable, $sourceTableColumns[$sourceColumnKey], $destTableColumns[$destColumnKey]);
+			}
+		}
+		
 		foreach ($addColumnKeys as $columnKey) {
 			$this->diffSql .= SqlBuilder::addTableColumn($sourceTable, $destTableColumns[$columnKey]);
 		}
@@ -189,12 +243,15 @@ class DatabaseCompare {
 
 	/**
 	 * 比對資料表的所有索引
-	 * @param type $tableKey
-	 * @param type $sourceTable
+	 * @param type $sourceKey
+	 * @param type $destKey
 	 */
-	function compareTableIndexes($tableKey, $sourceTable) {
-		$sourceTableIndexes = $this->source->getTableIndexes($tableKey);
-		$destTableIndexes = $this->dest->getTableIndexes($tableKey);
+	function compareTableIndexes($sourceKey, $destKey) {
+		$sourceTables = $this->source->getTables();
+		$sourceTable = $sourceTables[$sourceKey];
+
+		$sourceTableIndexes = $this->source->getTableIndexes($sourceKey);
+		$destTableIndexes = $this->dest->getTableIndexes($destKey);
 
 		list($syncIndexKeys, $addIndexKeys, $deleteIndexKeys) = $this->_compareArrayKeys($sourceTableIndexes, $destTableIndexes);
 		//echo "# Same Indexes: " . implode(", ", $syncIndexKeys) . "\n";
@@ -228,12 +285,15 @@ class DatabaseCompare {
 
 	/**
 	 * 比對資料表的所有限制
-	 * @param type $tableKey
-	 * @param type $sourceTable
+	 * @param type $sourceKey
+	 * @param type $destKey
 	 */
-	function compareTableConstraints($tableKey, $sourceTable) {
-		$sourceTableConstraints = $this->source->getTableConstraints($tableKey);
-		$destTableConstraints = $this->dest->getTableConstraints($tableKey);
+	function compareTableConstraints($sourceKey, $destKey) {
+		$sourceTables = $this->source->getTables();
+		$sourceTable = $sourceTables[$sourceKey];
+
+		$sourceTableConstraints = $this->source->getTableConstraints($sourceKey);
+		$destTableConstraints = $this->dest->getTableConstraints($destKey);
 
 		list($syncConstraintKeys, $addConstraintKeys, $deleteConstraintKeys) = $this->_compareArrayKeys($sourceTableConstraints, $destTableConstraints);
 		//echo "# Same Constraints: " . implode(", ", $syncConstraintKeys) . "\n";
