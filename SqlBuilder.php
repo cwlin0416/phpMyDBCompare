@@ -233,8 +233,9 @@ class SqlBuilder {
 		if (!empty($changes)) {
 			foreach ($changes as $key => $value) {
 				$column[$key] = $value['to'];
+				$columnSql = "-- Column $key From: ". $value['from']. " To: ". $value['to']. "\n";
 			}
-			$columnSql = "ALTER TABLE `" . $table['Name'] . "` MODIFY ";
+			$columnSql .= "ALTER TABLE `" . $table['Name'] . "` MODIFY ";
 			$columnSql .= self::getColumnDefinition($column);
 			$sql = $columnSql . ";\n";
 		}
