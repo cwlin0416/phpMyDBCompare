@@ -123,6 +123,11 @@ class SqlBuilder {
 		foreach ($constraints as $constraint) {
 			$sql .= " " . self::getConstraintDefinition($constraint) . ",\n";
 		}
+		
+		// Remove tailing comma
+		if( substr($sql, -2) == ",\n" ) {
+			$sql = substr($sql, 0, -2). "\n";
+		}
 
 		$sql .= ") ENGINE=" . $table['Engine'];
 		if (!self::$ignoreAutoIncrement && !empty($table['Auto_increment'])) {
